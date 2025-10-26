@@ -1,0 +1,208 @@
+{
+  "$schema": "https://shoehorn.dev/schemas/workflow-v2.json",
+  "version": "2.0",
+  "metadata": {
+    "name": "create-github-repo",
+    "displayName": "Create GitHub Repository",
+    "description": "Create a new GitHub repository with customizable settings",
+    "author": "shoehorn-team",
+    "icon": "📦",
+    "category": "github",
+    "tags": ["github", "repository", "git", "vcs"]
+  },
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "pattern": "^[a-z0-9-]+$",
+        "description": "Repository name (lowercase, alphanumeric with dashes)",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "description": {
+        "type": "string",
+        "description": "Repository description",
+        "default": ""
+      },
+      "defaultBranch": {
+        "type": "string",
+        "description": "Default branch name",
+        "default": "main",
+        "enum": ["main", "master", "develop"]
+      },
+      "autoInit": {
+        "type": "boolean",
+        "description": "Initialize repository with README",
+        "default": true
+      },
+      "private": {
+        "type": "boolean",
+        "description": "Create as private repository",
+        "default": true
+      },
+      "hasIssues": {
+        "type": "boolean",
+        "description": "Enable issues",
+        "default": true
+      },
+      "hasWiki": {
+        "type": "boolean",
+        "description": "Enable wiki",
+        "default": false
+      },
+      "hasProjects": {
+        "type": "boolean",
+        "description": "Enable projects",
+        "default": false
+      }
+    },
+    "required": ["name"]
+  },
+  "outputs": {
+    "repositoryUrl": {
+      "description": "GitHub repository URL",
+      "type": "string"
+    },
+    "htmlUrl": {
+      "description": "GitHub repository web URL",
+      "type": "string"
+    },
+    "cloneUrl": {
+      "description": "Git clone URL (HTTPS)",
+      "type": "string"
+    },
+    "sshUrl": {
+      "description": "Git clone URL (SSH)",
+      "type": "string"
+    }
+  },
+  "steps": [
+    {
+      "id": "create_repository",
+      "name": "Create GitHub Repository",
+      "adapter": "http",
+      "config": {
+        "url": "https://api.github.com/orgs/{{env.GITHUB_FORGE_ORGANIZATION}}/repos",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{secrets.github_token}}",
+          "Accept": "application/vnd.github.v3+json",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "{{inputs.name}}",
+          "description": "{{inputs.description}}",
+          "private": "{{inputs.private}}",
+          "auto_init": "{{inputs.autoInit}}",
+          "has_issues": "{{inputs.hasIssues}}",
+          "has_wiki": "{{inputs.hasWiki}}",
+          "has_projects": "{{inputs.hasProjects}}",
+          "default_branch": "{{inputs.defaultBranch}}"
+        },
+        "validation": {
+          "schema": "github-create-repo-v1"
+        }
+      },
+      "retry": {
+        "attempts": 3,
+        "backoff": "exponential",
+        "delay": "2s"
+      },
+      "timeout": "30s",
+      "outputs": {
+        "repositoryUrl": "{{response.url}}",
+        "htmlUrl": "{{response.html_url}}",
+        "cloneUrl": "{{response.clone_url}}",
+        "sshUrl": "{{response.ssh_url}}"
+      }
+    },
+    {
+      "id": "send_notification",
+      "name": "Send Success Notification",
+      "adapter": "http",
+      "depends_on": ["create_repository"],
+      "config": {
+        "url": "{{secrets.slack_webhook}}",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "text": "✅ Repository Created!",
+          "blocks": [
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "📦 New Repository: {{inputs.name}}"
+              }
+            },
+            {
+              "type": "section",
+              "fields": [
+                {
+                  "type": "mrkdwn",
+                  "text": "*Name:*\n{{inputs.name}}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Visibility:*\n{{#if inputs.private}}Private🔒{{else}}Public🌍{{/if}}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Default Branch:*\n{{inputs.defaultBranch}}"
+                },
+                {
+                  "type": "mrkdwn",
+                  "text": "*Created By:*\n{{user.email}}"
+                }
+              ]
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "<{{steps.create_repository.outputs.htmlUrl}}|View Repository on GitHub>"
+              }
+            }
+          ]
+        }
+      },
+      "continue_on_error": true
+    }
+  ],
+  "rollback": {
+    "enabled": true,
+    "steps": [
+      {
+        "id": "delete_repository",
+        "name": "Delete GitHub Repository",
+        "adapter": "http",
+        "config": {
+          "url": "https://api.github.com/repos/{{env.GITHUB_FORGE_ORGANIZATION}}/{{inputs.name}}",
+          "method": "DELETE",
+          "headers": {
+            "Authorization": "Bearer {{secrets.github_token}}",
+            "Accept": "application/vnd.github.v3+json"
+          }
+        }
+      },
+      {
+        "id": "send_rollback_notification",
+        "name": "Send Rollback Notification",
+        "adapter": "http",
+        "config": {
+          "url": "{{secrets.slack_webhook}}",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "text": "⚠️ Repository creation failed - rollback completed for {{inputs.name}}"
+          }
+        }
+      }
+    ]
+  }
+}
