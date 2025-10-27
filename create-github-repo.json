@@ -12,13 +12,13 @@
   },
   "actions": [
     {
-      "action": "create_repo",
+      "action": "github.repo.create",
       "label": "Create Repository",
       "description": "Create a new GitHub repository with specified settings",
       "primary": true
     },
     {
-      "action": "create_with_template",
+      "action": "github.create.with.template",
       "label": "Create from Template",
       "description": "Create repository from a GitHub template",
       "primary": false
