@@ -10,6 +10,20 @@
     "category": "github",
     "tags": ["github", "repository", "git", "vcs"]
   },
+  "actions": [
+    {
+      "action": "github.create_repo",
+      "label": "Create Repository",
+      "description": "Create a new GitHub repository with specified settings",
+      "primary": true
+    },
+    {
+      "action": "github.create_with_template",
+      "label": "Create from Template",
+      "description": "Create repository from a GitHub template",
+      "primary": false
+    }
+  ],
   "inputs": {
     "type": "object",
     "properties": {
