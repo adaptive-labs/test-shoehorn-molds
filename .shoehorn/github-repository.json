@@ -2,9 +2,9 @@
   "$schema": "https://shoehorn.dev/schemas/workflow-v2.json",
   "version": "2.0",
   "metadata": {
-    "name": "create-github-repo",
-    "displayName": "Create GitHub Repository",
-    "description": "Create a new GitHub repository with customizable settings",
+    "name": "github-repository",
+    "displayName": "GitHub Repository Creator",
+    "description": "Create and Update GitHub repositories",
     "author": "shoehorn-team",
     "icon": "📦",
     "category": "github",
@@ -38,6 +38,11 @@
         "type": "string",
         "description": "Repository description",
         "default": ""
+      },
+      "owner": {
+        "type": "string",
+        "description": "Repository owner (organization or user)",
+        "default": "{{env.GITHUB_FORGE_ORGANIZATION}}"
       },
       "defaultBranch": {
         "type": "string",
@@ -89,7 +94,7 @@
         }
       }
     },
-    "required": ["name"]
+    "required": ["name","topics","description"]
   },
   "outputs": {
     "repositoryUrl": {
