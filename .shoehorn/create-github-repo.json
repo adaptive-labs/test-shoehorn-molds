@@ -72,14 +72,21 @@
       },
       "topics": {
         "type": "array",
-        "description": "Repository topics/tags (e.g., platform-team, backend-team) for team ownership and categorization",
+        "description": "Repository topics/tags for team ownership and categorization",
         "items": {
           "type": "string",
           "pattern": "^[a-z0-9-]+$"
         },
         "default": [],
         "minItems": 0,
-        "maxItems": 20
+        "maxItems": 20,
+        "ui:widget": "multiselect",
+        "ui:options": {
+          "source": "catalog:teams",
+          "allowCustom": true,
+          "placeholder": "Select teams...",
+          "helpText": "Add teams to indicate ownership (e.g., platform-team, backend-team)"
+        }
       }
     },
     "required": ["name"]
