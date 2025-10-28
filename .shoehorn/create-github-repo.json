@@ -70,10 +70,16 @@
         "description": "Enable projects",
         "default": false
       },
-      "owner": {
-        "type": "string",
-        "description": "Repository owner",
-        "default": "adaptive-labs"
+      "topics": {
+        "type": "array",
+        "description": "Repository topics/tags (e.g., platform-team, backend-team) for team ownership and categorization",
+        "items": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "default": [],
+        "minItems": 0,
+        "maxItems": 20
       }
     },
     "required": ["name"]
@@ -112,13 +118,13 @@
         "body": {
           "name": "{{inputs.name}}",
           "description": "{{inputs.description}}",
-          "owner": "{{inputs.owner}}",
           "private": "{{inputs.private}}",
           "auto_init": "{{inputs.autoInit}}",
           "has_issues": "{{inputs.hasIssues}}",
           "has_wiki": "{{inputs.hasWiki}}",
           "has_projects": "{{inputs.hasProjects}}",
-          "default_branch": "{{inputs.defaultBranch}}"
+          "default_branch": "{{inputs.defaultBranch}}",
+          "topics": "{{inputs.topics}}"
         },
         "validation": {
           "schema": "github-create-repo-v1"
