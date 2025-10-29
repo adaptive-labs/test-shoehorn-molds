@@ -16,12 +16,6 @@
       "label": "Create Repository",
       "description": "Create a new GitHub repository with specified settings",
       "primary": true
-    },
-    {
-      "action": "github.create.with.template",
-      "label": "Create from Template",
-      "description": "Create repository from a GitHub template",
-      "primary": false
     }
   ],
   "inputs": {
@@ -91,34 +85,11 @@
       "owner": {
         "type": "string",
         "description": "Repository owner (organization or user)",
-        "default": "{{env.GITHUB_FORGE_ORGANIZATION}}",
+        "default": "adaptive-labs",
         "ui:options": {
           "readOnly": true,
           "helpText": "This value is automatically set from your organization configuration"
         }
-      },
-      "templateOwner": {
-        "type": "string",
-        "description": "Template repository owner (only for 'Create from Template' action)",
-        "ui:options": {
-          "helpText": "GitHub username or organization that owns the template repository"
-        }
-      },
-      "templateRepo": {
-        "type": "string",
-        "description": "Template repository name (only for 'Create from Template' action)",
-        "ui:options": {
-          "helpText": "Name of the template repository to use as a base"
-        }
-      },
-      "includeAllBranches": {
-        "type": "boolean",
-        "description": "Include all branches from template (only for 'Create from Template' action)",
-        "default": false,
-        "ui:options": {
-          "helpText": "If true, all branches from the template will be copied, not just the default branch"
-        }
-      }
     },
     "required": ["name","topics","description","owner"]
   },
@@ -163,7 +134,7 @@
           "has_projects": "{{inputs.hasProjects}}",
           "default_branch": "{{inputs.defaultBranch}}",
           "topics": "{{inputs.topics}}",
-          "owner": "{{env.GITHUB_FORGE_ORGANIZATION}}"
+          "owner": "{{inputs.owner}}"
         },
         "validation": {
           "schema": "github-create-repo-v1"
