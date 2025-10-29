@@ -3,7 +3,7 @@
   "version": "2.1",
   "metadata": {
     "name": "github-repository",
-    "displayName": "GitHub Repository Creator",
+    "displayName": "GitHub Repository",
     "description": "Create and Update GitHub repositories",
     "author": "shoehorn-team",
     "icon": "📦",
