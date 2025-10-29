@@ -87,9 +87,15 @@
           "placeholder": "Select teams...",
           "helpText": "Add teams to indicate ownership (e.g., platform-team, backend-team)"
         }
+      },
+      "owner": {
+        "type": "string",
+        "description": "Repository owner (organization or user)",
+        "default": "{{env.GITHUB_FORGE_ORGANIZATION}}",
+        "ui:widget": "hidden"
       }
     },
-    "required": ["name","topics","description"]
+    "required": ["name","topics","description","owner"]
   },
   "outputs": {
     "repositoryUrl": {
