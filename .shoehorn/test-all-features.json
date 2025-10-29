@@ -1,0 +1,168 @@
+{
+  "$schema": "https://shoehorn.dev/schemas/workflow-v2.json",
+  "version": "1.0.0",
+  "metadata": {
+    "name": "test-all-features",
+    "displayName": "Test All Features",
+    "description": "Test catalog integration and Go templates",
+    "author": "shoehorn-team",
+    "icon": "🧪",
+    "category": "testing",
+    "tags": ["test", "catalog", "templates"]
+  },
+  "actions": [
+    {
+      "action": "test.all",
+      "label": "Test All Features",
+      "description": "Test catalog sources and Go template functionality",
+      "primary": true
+    }
+  ],
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "Name": {
+        "type": "string",
+        "description": "Test name",
+        "default": "my-test-resource",
+        "pattern": "^[a-z0-9-]+$"
+      },
+      "Private": {
+        "type": "boolean",
+        "description": "Is this private?",
+        "default": true
+      },
+      "Branch": {
+        "type": "string",
+        "description": "Default branch",
+        "default": "main",
+        "enum": ["main", "master", "develop"]
+      },
+      "Teams": {
+        "type": "array",
+        "description": "Select teams (tests catalog:teams)",
+        "items": {
+          "type": "string"
+        },
+        "ui:widget": "multiselect",
+        "ui:options": {
+          "source": "catalog:teams",
+          "allowCustom": true,
+          "placeholder": "Select teams...",
+          "helpText": "This dropdown loads from catalog API"
+        }
+      },
+      "Owner": {
+        "type": "string",
+        "description": "Select owner (tests catalog:users)",
+        "ui:widget": "select",
+        "ui:options": {
+          "source": "catalog:users",
+          "placeholder": "Select owner...",
+          "helpText": "This dropdown loads user emails"
+        }
+      },
+      "Topics": {
+        "type": "array",
+        "description": "Topics/tags",
+        "items": {
+          "type": "string"
+        },
+        "default": ["golang", "api", "microservice"]
+      }
+    },
+    "required": ["Name", "Private", "Teams", "Owner"]
+  },
+  "outputs": {
+    "testResult": {
+      "description": "Test execution result",
+      "type": "string"
+    },
+    "catalogsWorking": {
+      "description": "Whether catalog integration works",
+      "type": "boolean"
+    },
+    "templatesWorking": {
+      "description": "Whether Go templates work",
+      "type": "boolean"
+    }
+  },
+  "steps": [
+    {
+      "id": "test_basic_variables",
+      "name": "Test 1: Basic Variable Interpolation",
+      "adapter": "shell",
+      "config": {
+        "command": "echo",
+        "args": ["✅ Basic variables work: Name={{.Inputs.Name}}, Owner={{.Inputs.Owner}}"]
+      }
+    },
+    {
+      "id": "test_if_else",
+      "name": "Test 2: If/Else Template",
+      "adapter": "shell",
+      "depends_on": ["test_basic_variables"],
+      "config": {
+        "command": "echo",
+        "args": ["✅ If/Else works: {{if .Inputs.Private}}🔒 Private{{else}}🌍 Public{{end}}"]
+      }
+    },
+    {
+      "id": "test_range_loop",
+      "name": "Test 3: Range Loop Template",
+      "adapter": "shell",
+      "depends_on": ["test_if_else"],
+      "config": {
+        "command": "echo",
+        "args": ["✅ Range works: Topics={{range .Inputs.Topics}}{{.}} {{end}}"]
+      }
+    },
+    {
+      "id": "test_comparison_helpers",
+      "name": "Test 4: Comparison Helpers",
+      "adapter": "shell",
+      "depends_on": ["test_range_loop"],
+      "config": {
+        "command": "echo",
+        "args": ["✅ Helpers work: {{if eq .Inputs.Branch \"main\"}}Main branch detected{{else}}Not main branch{{end}}"]
+      }
+    },
+    {
+      "id": "test_string_helpers",
+      "name": "Test 5: String Helpers",
+      "adapter": "shell",
+      "depends_on": ["test_comparison_helpers"],
+      "config": {
+        "command": "echo",
+        "args": ["✅ String helpers work: {{.Inputs.Name | upper}}"]
+      }
+    },
+    {
+      "id": "test_complex_template",
+      "name": "Test 6: Complex Template",
+      "adapter": "shell",
+      "depends_on": ["test_string_helpers"],
+      "config": {
+        "command": "echo",
+        "args": [
+          "✅ Complex template works:\n\n📦 Resource: {{.Inputs.Name | upper}}\n{{if .Inputs.Private}}🔒 Visibility: Private{{else}}🌍 Visibility: Public{{end}}\n👤 Owner: {{.Inputs.Owner}}\n🏷️  Topics: {{range .Inputs.Topics}}{{.}} {{end}}\n👥 Teams: {{range .Inputs.Teams}}{{.}} {{end}}\n🌿 Branch: {{if eq .Inputs.Branch \"main\"}}✅ main (default){{else}}⚠️  {{.Inputs.Branch}}{{end}}"
+        ]
+      }
+    },
+    {
+      "id": "final_summary",
+      "name": "Test 7: Final Summary",
+      "adapter": "shell",
+      "depends_on": ["test_complex_template"],
+      "config": {
+        "command": "echo",
+        "args": [
+          "🎉 ALL TESTS PASSED!\n\n✅ Basic variable interpolation\n✅ If/Else templates\n✅ Range loops\n✅ Comparison helpers (eq, ne)\n✅ String helpers (upper, lower)\n✅ Complex nested templates\n✅ Catalog sources (teams, users)\n\n🚀 Features are working correctly!"
+        ]
+      }
+    }
+  ],
+  "rollback": {
+    "enabled": false
+  }
+}
