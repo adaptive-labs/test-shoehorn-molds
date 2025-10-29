@@ -39,11 +39,6 @@
         "description": "Repository description",
         "default": ""
       },
-      "owner": {
-        "type": "string",
-        "description": "Repository owner (organization or user)",
-        "default": "{{env.GITHUB_FORGE_ORGANIZATION}}"
-      },
       "defaultBranch": {
         "type": "string",
         "description": "Default branch name",
@@ -136,7 +131,8 @@
           "has_wiki": "{{inputs.hasWiki}}",
           "has_projects": "{{inputs.hasProjects}}",
           "default_branch": "{{inputs.defaultBranch}}",
-          "topics": "{{inputs.topics}}"
+          "topics": "{{inputs.topics}}",
+          "owner": "{{env.GITHUB_FORGE_ORGANIZATION}}"
         },
         "validation": {
           "schema": "github-create-repo-v1"
