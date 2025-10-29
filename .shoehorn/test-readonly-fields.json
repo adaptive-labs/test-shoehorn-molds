@@ -1,0 +1,165 @@
+{
+  "$schema": "https://shoehorn.dev/schemas/workflow-v2.json",
+  "version": "1.0.0",
+  "metadata": {
+    "name": "test-readonly-fields",
+    "displayName": "Test ReadOnly Fields",
+    "description": "Demonstrates readOnly field behavior for all widget types",
+    "author": "shoehorn-team",
+    "icon": "🔒",
+    "category": "testing",
+    "tags": ["test", "readonly", "ui"]
+  },
+  "actions": [
+    {
+      "action": "test.readonly",
+      "label": "Test ReadOnly",
+      "description": "Test readOnly fields across all widgets",
+      "primary": true
+    }
+  ],
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "EditableName": {
+        "type": "string",
+        "description": "You can edit this field",
+        "default": "my-resource",
+        "ui:options": {
+          "helpText": "This is an editable text field"
+        }
+      },
+      "ReadOnlyOrganization": {
+        "type": "string",
+        "description": "Organization (auto-filled from environment)",
+        "default": "{{env.GITHUB_FORGE_ORGANIZATION}}",
+        "ui:options": {
+          "readOnly": true,
+          "helpText": "This field is read-only and shows the organization from environment variables"
+        }
+      },
+      "EditableNumber": {
+        "type": "number",
+        "description": "You can edit this number",
+        "default": 42,
+        "minimum": 0,
+        "maximum": 100,
+        "ui:options": {
+          "helpText": "This is an editable number field"
+        }
+      },
+      "ReadOnlyVersion": {
+        "type": "number",
+        "description": "Version (auto-assigned)",
+        "default": 1,
+        "ui:options": {
+          "readOnly": true,
+          "helpText": "Version is automatically assigned and cannot be changed"
+        }
+      },
+      "EditablePrivate": {
+        "type": "boolean",
+        "description": "You can toggle this",
+        "default": true,
+        "ui:options": {
+          "helpText": "This is an editable checkbox"
+        }
+      },
+      "ReadOnlyAutoInit": {
+        "type": "boolean",
+        "description": "Auto-initialize (policy enforced)",
+        "default": true,
+        "ui:options": {
+          "readOnly": true,
+          "helpText": "This setting is enforced by policy and cannot be changed"
+        }
+      },
+      "EditableBranch": {
+        "type": "string",
+        "description": "You can change this branch",
+        "default": "main",
+        "enum": ["main", "master", "develop"],
+        "ui:widget": "select",
+        "ui:options": {
+          "helpText": "This is an editable dropdown"
+        }
+      },
+      "ReadOnlyLifecycle": {
+        "type": "string",
+        "description": "Lifecycle (auto-set)",
+        "default": "production",
+        "enum": ["production", "staging", "development"],
+        "ui:widget": "select",
+        "ui:options": {
+          "readOnly": true,
+          "helpText": "Lifecycle is automatically determined and cannot be changed"
+        }
+      },
+      "EditableTeams": {
+        "type": "array",
+        "description": "You can select teams",
+        "items": {
+          "type": "string"
+        },
+        "default": [],
+        "ui:widget": "multiselect",
+        "ui:options": {
+          "source": "catalog:teams",
+          "allowCustom": true,
+          "helpText": "This is an editable multiselect"
+        }
+      },
+      "ReadOnlyOwnerTeam": {
+        "type": "array",
+        "description": "Owner team (auto-assigned)",
+        "items": {
+          "type": "string"
+        },
+        "default": ["platform-team"],
+        "ui:widget": "multiselect",
+        "ui:options": {
+          "readOnly": true,
+          "helpText": "Owner team is automatically assigned based on your access and cannot be changed"
+        }
+      },
+      "UserEmail": {
+        "type": "string",
+        "description": "Created by (your email)",
+        "default": "{{user.email}}",
+        "ui:options": {
+          "readOnly": true,
+          "helpText": "Automatically filled with your email address"
+        }
+      }
+    },
+    "required": ["EditableName"]
+  },
+  "steps": [
+    {
+      "id": "display_values",
+      "name": "Display All Values",
+      "adapter": "shell",
+      "config": {
+        "command": "echo",
+        "args": [
+          "📋 Form Values:\n\n✏️  EDITABLE FIELDS:\n- Name: {{.Inputs.EditableName}}\n- Number: {{.Inputs.EditableNumber}}\n- Private: {{.Inputs.EditablePrivate}}\n- Branch: {{.Inputs.EditableBranch}}\n- Teams: {{range .Inputs.EditableTeams}}{{.}} {{end}}\n\n🔒 READ-ONLY FIELDS:\n- Organization: {{.Inputs.ReadOnlyOrganization}}\n- Version: {{.Inputs.ReadOnlyVersion}}\n- Auto-Init: {{.Inputs.ReadOnlyAutoInit}}\n- Lifecycle: {{.Inputs.ReadOnlyLifecycle}}\n- Owner Team: {{range .Inputs.ReadOnlyOwnerTeam}}{{.}} {{end}}\n- User Email: {{.Inputs.UserEmail}}"
+        ]
+      }
+    },
+    {
+      "id": "verify_readonly_not_changed",
+      "name": "Verify ReadOnly Values",
+      "adapter": "shell",
+      "depends_on": ["display_values"],
+      "config": {
+        "command": "echo",
+        "args": [
+          "✅ Read-only fields preserved:\n{{if eq .Inputs.ReadOnlyVersion 1.0}}✅ Version unchanged{{else}}⚠️  Version was modified!{{end}}\n{{if eq .Inputs.ReadOnlyAutoInit true}}✅ Auto-init unchanged{{else}}⚠️  Auto-init was modified!{{end}}\n{{if eq .Inputs.ReadOnlyLifecycle \"production\"}}✅ Lifecycle unchanged{{else}}⚠️  Lifecycle was modified!{{end}}"
+        ]
+      }
+    }
+  ],
+  "rollback": {
+    "enabled": false
+  }
+}
