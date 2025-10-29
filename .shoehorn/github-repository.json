@@ -1,6 +1,6 @@
 {
   "$schema": "https://shoehorn.dev/schemas/workflow-v2.json",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "metadata": {
     "name": "github-repository",
     "displayName": "GitHub Repository",
