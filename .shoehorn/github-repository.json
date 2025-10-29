@@ -90,6 +90,7 @@
           "readOnly": true,
           "helpText": "This value is automatically set from your organization configuration"
         }
+      }
     },
     "required": ["name","topics","description","owner"]
   },
@@ -241,4 +242,3 @@
       }
     ]
   }
-}
