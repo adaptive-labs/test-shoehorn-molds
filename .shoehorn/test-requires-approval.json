@@ -18,19 +18,19 @@
   },
   "actions": [
     {
-      "action": "deploy.production",
+      "action": "deployment.service.production",
       "label": "Deploy to Production",
       "description": "Deploy service to production environment (REQUIRES APPROVAL)",
       "primary": true
     },
     {
-      "action": "deploy.staging",
+      "action": "deployment.service.staging",
       "label": "Deploy to Staging",
       "description": "Deploy service to staging environment (no approval required)",
       "primary": false
     },
     {
-      "action": "preview",
+      "action": "deployment.service.preview",
       "label": "Preview Changes",
       "description": "Preview deployment without executing",
       "primary": false

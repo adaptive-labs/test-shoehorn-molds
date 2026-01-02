@@ -1,0 +1,182 @@
+{
+  "$schema": "https://shoehorn.dev/schemas/workflow-v2.json",
+  "version": "1.0.0",
+  "metadata": {
+    "name": "github-repos",
+    "displayName": "GitHub Repository Topics Manager",
+    "description": "Add, replace, or remove topics from multiple GitHub repositories",
+    "author": "platform-team",
+    "icon": "🏷️",
+    "category": "github",
+    "tags": ["github", "topics", "repositories", "bulk-operations"]
+  },
+  "actions": [
+    {
+      "action": "add-topics",
+      "label": "Add Topics",
+      "description": "Add topics to multiple repositories (preserves existing topics)",
+      "primary": true
+    },
+    {
+      "action": "replace-topics",
+      "label": "Replace Topics",
+      "description": "Replace all topics on multiple repositories",
+      "primary": false
+    },
+    {
+      "action": "remove-topics",
+      "label": "Remove Topics",
+      "description": "Remove specific topics from multiple repositories",
+      "primary": false
+    },
+    {
+      "action": "preview",
+      "label": "Preview Changes",
+      "description": "Preview topic changes without executing",
+      "primary": false
+    }
+  ],
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "owner": {
+        "type": "string",
+        "description": "GitHub organization or user name",
+        "pattern": "^[a-zA-Z0-9-]+$",
+        "minLength": 1,
+        "maxLength": 39
+      },
+      "repositories": {
+        "type": "array",
+        "description": "List of repository names (without owner)",
+        "items": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9._-]+$"
+        },
+        "minItems": 1,
+        "uniqueItems": true,
+        "ui:widget": "tags",
+        "ui:options": {
+          "placeholder": "Enter repository names...",
+          "helpText": "Press Enter after each repository name. Example: my-repo, another-repo"
+        }
+      },
+      "topics": {
+        "type": "array",
+        "description": "Topics to add/replace/remove",
+        "items": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "minItems": 1,
+        "uniqueItems": true,
+        "ui:widget": "tags",
+        "ui:options": {
+          "placeholder": "Enter topics (lowercase, alphanumeric, hyphens only)...",
+          "helpText": "Press Enter after each topic. Example: team-platform, owner-backend-team"
+        }
+      },
+      "mode": {
+        "type": "string",
+        "description": "How to apply topics",
+        "enum": ["add", "replace", "remove"],
+        "default": "add",
+        "ui:options": {
+          "enumNames": {
+            "add": "Add - Append topics to existing ones",
+            "replace": "Replace - Overwrite all topics",
+            "remove": "Remove - Delete specified topics"
+          }
+        }
+      },
+      "dryRun": {
+        "type": "boolean",
+        "description": "Preview changes without executing",
+        "default": false
+      }
+    },
+    "required": ["owner", "repositories", "topics", "mode"]
+  },
+  "outputs": {
+    "successCount": {
+      "description": "Number of repositories updated successfully",
+      "type": "number"
+    },
+    "failureCount": {
+      "description": "Number of repositories that failed to update",
+      "type": "number"
+    },
+    "results": {
+      "description": "Detailed results for each repository",
+      "type": "array"
+    }
+  },
+  "steps": [
+    {
+      "id": "validate_inputs",
+      "name": "Step 1: Validate Inputs",
+      "adapter": "shell",
+      "config": {
+        "command": "echo",
+        "args": [
+          "🔍 Validating inputs...\n\n👤 Owner: {{.Inputs.owner}}\n📦 Repositories ({{len .Inputs.repositories}}):\n{{range .Inputs.repositories}}   - {{.}}\n{{end}}\n🏷️  Topics ({{len .Inputs.topics}}):\n{{range .Inputs.topics}}   - {{.}}\n{{end}}\n⚙️  Mode: {{.Inputs.mode | upper}}\n{{if .Inputs.dryRun}}🔍 Dry Run: ENABLED (no changes will be made){{else}}✅ Dry Run: DISABLED (changes will be applied){{end}}\n\n✅ Input validation complete!"
+        ]
+      }
+    },
+    {
+      "id": "check_gh_cli",
+      "name": "Step 2: Check GitHub CLI",
+      "adapter": "shell",
+      "depends_on": ["validate_inputs"],
+      "config": {
+        "command": "bash",
+        "args": [
+          "-c",
+          "if command -v gh &> /dev/null; then echo '✅ GitHub CLI found'; gh --version; else echo '❌ ERROR: GitHub CLI (gh) not found. Please install: https://cli.github.com/'; exit 1; fi"
+        ]
+      }
+    },
+    {
+      "id": "check_gh_auth",
+      "name": "Step 3: Verify GitHub Authentication",
+      "adapter": "shell",
+      "depends_on": ["check_gh_cli"],
+      "config": {
+        "command": "bash",
+        "args": [
+          "-c",
+          "if gh auth status &> /dev/null; then echo '✅ GitHub authentication verified'; gh auth status 2>&1 | head -3; else echo '❌ ERROR: Not authenticated with GitHub. Run: gh auth login'; exit 1; fi"
+        ]
+      }
+    },
+    {
+      "id": "process_repositories",
+      "name": "Step 4: Process Repositories",
+      "adapter": "shell",
+      "depends_on": ["check_gh_auth"],
+      "config": {
+        "command": "bash",
+        "args": [
+          "-c",
+          "#!/bin/bash\nset -e\n\nOWNER='{{.Inputs.owner}}'\nMODE='{{.Inputs.mode}}'\nDRY_RUN={{.Inputs.dryRun}}\nNEW_TOPICS=({{range .Inputs.topics}}'{{.}}' {{end}})\n\necho '🏷️  Processing repositories...'\necho ''\n\nSUCCESS_COUNT=0\nFAIL_COUNT=0\n\n{{range .Inputs.repositories}}\nREPO='{{.}}'\nFULL_REPO=\"$OWNER/$REPO\"\n\necho \"📦 Processing: $FULL_REPO\"\necho \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\"\n\n# Fetch current topics\necho \"🔍 Fetching current topics...\"\nCURRENT_TOPICS=$(gh api repos/$FULL_REPO/topics -H \"Accept: application/vnd.github+json\" --jq '.names | join(\",\")' 2>/dev/null || echo \"\")\n\nif [ -n \"$CURRENT_TOPICS\" ]; then\n  echo \"📋 Current topics: $CURRENT_TOPICS\"\nelse\n  echo \"📋 Current topics: (none)\"\nfi\n\n# Build new topics list based on mode\nif [ \"$MODE\" = \"add\" ]; then\n  # Add mode: merge current + new\n  if [ -n \"$CURRENT_TOPICS\" ]; then\n    ALL_TOPICS=\"$CURRENT_TOPICS,${NEW_TOPICS[@]}\"\n  else\n    ALL_TOPICS=\"${NEW_TOPICS[@]}\"\n  fi\n  ALL_TOPICS=$(echo \"$ALL_TOPICS\" | tr ',' '\\n' | tr ' ' '\\n' | sort -u | tr '\\n' ',' | sed 's/,$//')\n  echo \"➕ Adding topics: ${NEW_TOPICS[@]}\"\n  echo \"🏷️  Final topics: $ALL_TOPICS\"\nelif [ \"$MODE\" = \"replace\" ]; then\n  # Replace mode: use only new topics\n  ALL_TOPICS=\"${NEW_TOPICS[@]}\"\n  ALL_TOPICS=$(echo \"$ALL_TOPICS\" | tr ' ' ',' | sed 's/,$//')\n  echo \"🔄 Replacing all topics with: ${NEW_TOPICS[@]}\"\n  echo \"🏷️  Final topics: $ALL_TOPICS\"\nelif [ \"$MODE\" = \"remove\" ]; then\n  # Remove mode: current - new\n  if [ -n \"$CURRENT_TOPICS\" ]; then\n    TOPICS_TO_REMOVE=\"${NEW_TOPICS[@]}\"\n    ALL_TOPICS=\"$CURRENT_TOPICS\"\n    for topic in ${TOPICS_TO_REMOVE[@]}; do\n      ALL_TOPICS=$(echo \"$ALL_TOPICS\" | sed \"s/$topic//g\" | sed 's/,,/,/g' | sed 's/^,//' | sed 's/,$//')\n    done\n    echo \"➖ Removing topics: ${NEW_TOPICS[@]}\"\n    echo \"🏷️  Final topics: $ALL_TOPICS\"\n  else\n    echo \"⚠️  No current topics to remove from\"\n    ALL_TOPICS=\"\"\n  fi\nfi\n\n# Apply changes (unless dry run)\nif [ \"$DRY_RUN\" = \"true\" ]; then\n  echo \"🔍 DRY RUN - No changes made\"\n  echo \"✅ Would update topics to: $ALL_TOPICS\"\n  SUCCESS_COUNT=$((SUCCESS_COUNT + 1))\nelse\n  echo \"⚙️  Updating repository topics...\"\n  \n  # Convert comma-separated to JSON array\n  TOPICS_JSON=$(echo \"$ALL_TOPICS\" | jq -R 'split(\",\") | map(select(length > 0))')\n  \n  # Update topics using GitHub API\n  if gh api -X PUT repos/$FULL_REPO/topics \\\n    -H \"Accept: application/vnd.github+json\" \\\n    -f names=\"$TOPICS_JSON\" > /dev/null 2>&1; then\n    echo \"✅ Successfully updated topics\"\n    SUCCESS_COUNT=$((SUCCESS_COUNT + 1))\n  else\n    echo \"❌ Failed to update topics\"\n    FAIL_COUNT=$((FAIL_COUNT + 1))\n  fi\nfi\n\necho \"\"\n{{end}}\n\necho \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\"\necho \"📊 Summary:\"\necho \"   ✅ Success: $SUCCESS_COUNT\"\necho \"   ❌ Failed: $FAIL_COUNT\"\necho \"   📦 Total: $((SUCCESS_COUNT + FAIL_COUNT))\"\n\nif [ $FAIL_COUNT -gt 0 ]; then\n  echo \"\"\n  echo \"⚠️  Some repositories failed to update. Check errors above.\"\n  exit 1\nfi\n"
+        ]
+      }
+    },
+    {
+      "id": "final_summary",
+      "name": "Step 5: Final Summary",
+      "adapter": "shell",
+      "depends_on": ["process_repositories"],
+      "config": {
+        "command": "echo",
+        "args": [
+          "🎉 OPERATION COMPLETE\n\n📊 Results:\n   Owner: {{.Inputs.owner}}\n   Repositories: {{len .Inputs.repositories}}\n   Topics: {{len .Inputs.topics}}\n   Mode: {{.Inputs.mode | upper}}\n   {{if .Inputs.dryRun}}Dry Run: YES (no changes made){{else}}Dry Run: NO (changes applied){{end}}\n\n🏷️  Topics {{if eq .Inputs.mode \"add\"}}added{{else if eq .Inputs.mode \"replace\"}}replaced{{else}}removed{{end}}:\n{{range .Inputs.topics}}   - {{.}}\n{{end}}\n\n✅ All operations completed successfully!"
+        ]
+      }
+    }
+  ],
+  "rollback": {
+    "enabled": false,
+    "reason": "Topic changes can be reverted by using the 'replace' or 'remove' mode"
+  }
+}

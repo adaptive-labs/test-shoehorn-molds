@@ -12,7 +12,7 @@
   },
   "actions": [
     {
-      "action": "test.all",
+      "action": "system.test.all",
       "label": "Test All Features",
       "description": "Test catalog sources and Go template functionality",
       "primary": true
