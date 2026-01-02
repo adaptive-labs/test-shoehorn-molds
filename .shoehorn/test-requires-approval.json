@@ -1,0 +1,175 @@
+{
+  "$schema": "https://shoehorn.dev/schemas/workflow-v2.json",
+  "version": "1.0.0",
+  "metadata": {
+    "name": "test-requires-approval",
+    "displayName": "TEST: Requires Approval",
+    "description": "Test mold that demonstrates approval workflow requirements for production changes",
+    "author": "platform-team",
+    "icon": "🔐",
+    "category": "testing",
+    "tags": ["test", "approval", "production", "deployment"],
+    "requiresApproval": true,
+    "approvalMetadata": {
+      "reason": "Production deployment requires security and platform team approval",
+      "minimumApprovers": 2,
+      "approverGroups": ["security-team", "platform-leads"]
+    }
+  },
+  "actions": [
+    {
+      "action": "deploy.production",
+      "label": "Deploy to Production",
+      "description": "Deploy service to production environment (REQUIRES APPROVAL)",
+      "primary": true
+    },
+    {
+      "action": "deploy.staging",
+      "label": "Deploy to Staging",
+      "description": "Deploy service to staging environment (no approval required)",
+      "primary": false
+    },
+    {
+      "action": "preview",
+      "label": "Preview Changes",
+      "description": "Preview deployment without executing",
+      "primary": false
+    }
+  ],
+  "inputs": {
+    "type": "object",
+    "properties": {
+      "serviceName": {
+        "type": "string",
+        "description": "Name of the service to deploy",
+        "pattern": "^[a-z0-9-]+$",
+        "minLength": 3,
+        "maxLength": 64,
+        "default": "my-service"
+      },
+      "environment": {
+        "type": "string",
+        "description": "Target deployment environment",
+        "enum": ["dev", "staging", "prod"],
+        "default": "staging"
+      },
+      "imageTag": {
+        "type": "string",
+        "description": "Docker image tag to deploy",
+        "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$",
+        "default": "v1.0.0"
+      },
+      "replicas": {
+        "type": "number",
+        "description": "Number of pod replicas",
+        "minimum": 1,
+        "maximum": 10,
+        "default": 3
+      },
+      "enableMetrics": {
+        "type": "boolean",
+        "description": "Enable Prometheus metrics scraping",
+        "default": true
+      },
+      "approver": {
+        "type": "string",
+        "description": "Select approver (tests catalog:users)",
+        "ui:widget": "select",
+        "ui:options": {
+          "source": "catalog:users",
+          "placeholder": "Select approver...",
+          "helpText": "User who will approve this deployment"
+        }
+      },
+      "justification": {
+        "type": "string",
+        "description": "Justification for this deployment",
+        "ui:widget": "textarea",
+        "ui:options": {
+          "rows": 4,
+          "placeholder": "Explain why this deployment is needed..."
+        }
+      }
+    },
+    "required": ["serviceName", "environment", "imageTag", "approver", "justification"]
+  },
+  "outputs": {
+    "deploymentStatus": {
+      "description": "Deployment status",
+      "type": "string"
+    },
+    "approvalRequired": {
+      "description": "Whether approval was required",
+      "type": "boolean"
+    },
+    "approvalRequestId": {
+      "description": "Approval request ID if created",
+      "type": "string"
+    }
+  },
+  "steps": [
+    {
+      "id": "validate_inputs",
+      "name": "Step 1: Validate Deployment Inputs",
+      "adapter": "shell",
+      "config": {
+        "command": "echo",
+        "args": [
+          "🔍 Validating deployment parameters...\n\n📦 Service: {{.Inputs.serviceName}}\n🏷️  Image Tag: {{.Inputs.imageTag}}\n🌍 Environment: {{.Inputs.environment | upper}}\n📊 Replicas: {{.Inputs.replicas}}\n📈 Metrics: {{if .Inputs.enableMetrics}}✅ Enabled{{else}}❌ Disabled{{end}}\n\n{{if eq .Inputs.environment \"prod\"}}⚠️  PRODUCTION DEPLOYMENT - APPROVAL REQUIRED{{else}}✅ Non-production deployment - no approval needed{{end}}"
+        ]
+      }
+    },
+    {
+      "id": "check_approval_policy",
+      "name": "Step 2: Check Approval Policy",
+      "adapter": "shell",
+      "depends_on": ["validate_inputs"],
+      "config": {
+        "command": "echo",
+        "args": [
+          "🔐 Checking approval requirements...\n\n{{if eq .Inputs.environment \"prod\"}}🛑 APPROVAL REQUIRED\n\n📋 Approval Policy: Production Deployments\n👥 Required Approvers: 2\n🏷️  Approver Groups:\n   - security-team\n   - platform-leads\n\n👤 Requested Approver: {{.Inputs.approver}}\n📝 Justification: {{.Inputs.justification}}\n\n⏳ Waiting for approval...{{else}}✅ No approval required for {{.Inputs.environment}} environment{{end}}"
+        ]
+      }
+    },
+    {
+      "id": "simulate_deployment",
+      "name": "Step 3: Simulate Deployment",
+      "adapter": "shell",
+      "depends_on": ["check_approval_policy"],
+      "config": {
+        "command": "echo",
+        "args": [
+          "🚀 Simulating deployment...\n\n{{if eq .Inputs.environment \"prod\"}}🔒 [APPROVAL PENDING] Deployment would execute after approval{{else}}✅ Deploying {{.Inputs.serviceName}}:{{.Inputs.imageTag}} to {{.Inputs.environment}}\n\n📦 Creating {{.Inputs.replicas}} replicas...\n{{if .Inputs.enableMetrics}}📊 Configuring Prometheus metrics...{{end}}\n✅ Deployment successful!{{end}}"
+        ]
+      }
+    },
+    {
+      "id": "final_status",
+      "name": "Step 4: Deployment Status Summary",
+      "adapter": "shell",
+      "depends_on": ["simulate_deployment"],
+      "config": {
+        "command": "echo",
+        "args": [
+          "📊 DEPLOYMENT STATUS SUMMARY\n\n{{if eq .Inputs.environment \"prod\"}}🔐 Status: PENDING APPROVAL\n\n⏳ This deployment requires approval from:\n   • Security Team (1 approver)\n   • Platform Leads (1 approver)\n\n📧 Approval request sent to: {{.Inputs.approver}}\n📝 Justification: {{.Inputs.justification}}\n\n🔔 You will be notified when:\n   ✓ Approvers review your request\n   ✓ All required approvals are received\n   ✓ Deployment executes automatically\n\n⚙️  To check approval status:\n   Use the Approval Requests dashboard\n\n⚠️  NOTE: This is a TEST mold demonstrating approval workflows.\n   Actual approval enforcement will be implemented in Tier 1-2.{{else}}✅ Status: COMPLETED\n\n🚀 Deployment successful!\n   Service: {{.Inputs.serviceName}}\n   Version: {{.Inputs.imageTag}}\n   Environment: {{.Inputs.environment | upper}}\n   Replicas: {{.Inputs.replicas}}\n\n🎉 No approval required for non-production environments.{{end}}\n\n🧪 TEST COMPLETE - Approval workflow demonstration finished!"
+        ]
+      }
+    }
+  ],
+  "rollback": {
+    "enabled": true,
+    "steps": [
+      {
+        "id": "rollback_deployment",
+        "name": "Rollback Deployment",
+        "adapter": "shell",
+        "config": {
+          "command": "echo",
+          "args": [
+            "⏮️  Rolling back deployment for {{.Inputs.serviceName}}...\n\n🔄 Reverting to previous version\n✅ Rollback complete!"
+          ]
+        }
+      }
+    ]
+  }
+}
