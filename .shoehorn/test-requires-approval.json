@@ -1,6 +1,6 @@
 {
   "$schema": "https://shoehorn.dev/schemas/workflow-v2.json",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "metadata": {
     "name": "test-requires-approval",
     "displayName": "Production Deployment (Approval Required)",
