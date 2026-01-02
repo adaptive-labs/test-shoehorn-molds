@@ -1,17 +1,17 @@
 {
   "$schema": "https://shoehorn.dev/schemas/workflow-v2.json",
-  "version": "1.0.2",
+  "version": "1.0.0",
   "metadata": {
-    "name": "test-requires-approval",
-    "displayName": "Production Deployment (Approval Required)",
-    "description": "Deploy to production - requires approval from platform leads. Uses real deployment.service.production action to test approval workflow.",
+    "name": "production-deploy-approval-test",
+    "displayName": "Production Deployment (Approval Test)",
+    "description": "Real deployment action that triggers approval workflow",
     "author": "platform-team",
-    "icon": "🔐",
+    "icon": "🚀",
     "category": "deployment",
-    "tags": ["test", "approval", "production", "deployment"],
+    "tags": ["deployment", "production", "approval", "test"],
     "requiresApproval": true,
     "approvalMetadata": {
-      "reason": "Production deployments require platform team approval for safety and compliance",
+      "reason": "Production deployments require approval from platform leads",
       "minimumApprovers": 1,
       "approverGroups": ["platform-leads", "engineering-leads"]
     }
@@ -20,81 +20,79 @@
     {
       "action": "deployment.service.production",
       "label": "Deploy to Production",
-      "description": "Deploy service to production environment (REQUIRES APPROVAL)",
+      "description": "Deploy service to production (REQUIRES APPROVAL)",
       "primary": true
     },
     {
       "action": "deployment.service.staging",
       "label": "Deploy to Staging",
-      "description": "Deploy service to staging environment (no approval required)",
-      "primary": false
-    },
-    {
-      "action": "deployment.service.development",
-      "label": "Deploy to Development",
-      "description": "Deploy service to development environment (no approval required)",
+      "description": "Deploy service to staging (no approval)",
       "primary": false
     }
   ],
   "inputs": {
     "type": "object",
     "properties": {
-      "serviceName": {
+      "service_name": {
         "type": "string",
-        "description": "Name of the service to deploy to production",
+        "description": "Name of the service to deploy",
         "pattern": "^[a-z0-9-]+$",
         "minLength": 3,
         "maxLength": 64,
-        "default": "my-service"
+        "default": "test-service"
       },
-      "imageTag": {
+      "version": {
         "type": "string",
-        "description": "Docker image tag to deploy",
+        "description": "Service version to deploy",
         "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$",
         "default": "v1.0.0"
       },
       "replicas": {
         "type": "number",
-        "description": "Number of pod replicas",
+        "description": "Number of replicas to deploy",
         "minimum": 1,
         "maximum": 10,
         "default": 3
       },
       "justification": {
         "type": "string",
-        "description": "Justification for this production deployment (REQUIRED)",
+        "description": "Why is this deployment needed?",
         "minLength": 10,
         "ui:widget": "textarea",
         "ui:options": {
-          "rows": 4,
-          "placeholder": "Explain why this production deployment is needed (security review, bug fix, new feature, etc.)..."
+          "rows": 3,
+          "placeholder": "Explain the reason for this production deployment..."
         }
       }
     },
-    "required": ["serviceName", "imageTag", "replicas", "justification"]
+    "required": ["service_name", "version", "replicas", "justification"]
   },
   "outputs": {
-    "deploymentStatus": {
+    "deployment_id": {
+      "description": "Unique deployment identifier",
+      "type": "string"
+    },
+    "status": {
       "description": "Deployment status",
       "type": "string"
     },
-    "approvalRequired": {
+    "deployed_at": {
+      "description": "Deployment timestamp",
+      "type": "string"
+    },
+    "approval_required": {
       "description": "Whether approval was required",
       "type": "boolean"
-    },
-    "approvalRequestId": {
-      "description": "Approval request ID if created",
-      "type": "string"
     }
   },
   "steps": [
     {
       "id": "deploy_production",
-      "name": "Deploy to Production (Requires Approval)",
+      "name": "Deploy to Production Environment",
       "action": "deployment.service.production",
       "inputs": {
-        "service_name": "{{.Inputs.serviceName}}",
-        "version": "{{.Inputs.imageTag}}",
+        "service_name": "{{.Inputs.service_name}}",
+        "version": "{{.Inputs.version}}",
         "replicas": {{.Inputs.replicas}}
       }
     }

@@ -73,7 +73,7 @@
         "ui:widget": "tags",
         "ui:options": {
           "placeholder": "Enter topics (lowercase, alphanumeric, hyphens only)...",
-          "helpText": "Press Enter after each topic. Example: team-platform, owner-backend-team"
+          "helpText": "Press Enter after each topic. Example: team-platform-team, owner-backend-team"
         }
       },
       "mode": {
