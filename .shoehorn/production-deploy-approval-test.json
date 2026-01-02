@@ -93,7 +93,7 @@
       "inputs": {
         "service_name": "{{.Inputs.service_name}}",
         "version": "{{.Inputs.version}}",
-        "replicas": {{.Inputs.replicas}}
+        "replicas": "{{.Inputs.replicas}}"
       }
     }
   ],

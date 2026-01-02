@@ -95,7 +95,7 @@
       "inputs": {
         "service_name": "{{.Inputs.serviceName}}",
         "version": "{{.Inputs.imageTag}}",
-        "replicas": {{.Inputs.replicas}}
+        "replicas": "{{.Inputs.replicas}}"
       }
     }
   ],
